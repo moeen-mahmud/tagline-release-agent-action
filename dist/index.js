@@ -28876,7 +28876,9 @@ var CommitTypeSchema = external_exports.enum([
   "ci",
   "chore",
   "revert",
-  "breaking"
+  "breaking",
+  "hotfix",
+  "release"
 ]);
 var BumpTypeSchema = external_exports.enum(["major", "minor", "patch", "none"]);
 var MonorepoTypeSchema = external_exports.enum([
@@ -28920,6 +28922,11 @@ var MonorepoInfoSchema = external_exports.object({
   packages: external_exports.array(PackageInfoSchema),
   rootPackage: PackageInfoSchema.nullable()
 });
+var VersioningSchemeSchema = external_exports.enum(["semver", "calver", "incremental"]);
+var VersioningConfigSchema = external_exports.object({
+  scheme: VersioningSchemeSchema,
+  pattern: external_exports.string().nullable()
+});
 var RepoConfigSchema = external_exports.object({
   branches: external_exports.object({
     production: external_exports.string(),
@@ -28930,6 +28937,7 @@ var RepoConfigSchema = external_exports.object({
     staging: external_exports.string(),
     development: external_exports.string()
   }),
+  versioning: VersioningConfigSchema,
   releaseNotesStyle: external_exports.string(),
   customContext: external_exports.string(),
   rawContent: external_exports.string()
@@ -34101,7 +34109,7 @@ async function openReleasePR(plan, octokit) {
 async function postCompletionComment(plan, octokit, ctx) {
   if (!plan.issueNumber) return;
   const tag = releaseTagName(plan.nextVersion);
-  const body = ctx.error ? buildFailureBody(tag, ctx.error) : buildSuccessBody(tag, ctx);
+  const body = ctx.error ? buildFailureBody(tag, ctx.error) : buildSuccessBody(plan, tag, ctx);
   await octokit.rest.issues.createComment({
     owner: plan.repoOwner,
     repo: plan.repoName,
@@ -34109,7 +34117,7 @@ async function postCompletionComment(plan, octokit, ctx) {
     body
   });
 }
-function buildSuccessBody(tag, ctx) {
+function buildSuccessBody(plan, tag, ctx) {
   if (ctx.dryRun) {
     return [
       `${APP_DISPLAY_NAME} dry-run complete for \`${tag}\`. No changes were made to the repo.`,
@@ -34120,6 +34128,18 @@ function buildSuccessBody(tag, ctx) {
   const lines = [`${APP_DISPLAY_NAME} released \`${tag}\` \u{1F389}`, ""];
   if (ctx.releaseUrl) lines.push(`- GitHub release: ${ctx.releaseUrl}`);
   if (ctx.prUrl) lines.push(`- Changelog PR: ${ctx.prUrl}`);
+  if (!ctx.prUrl && ctx.prError) {
+    const branch = releaseBranchName(plan.nextVersion);
+    const compareUrl = `https://github.com/${plan.repoOwner}/${plan.repoName}/compare/${plan.baseBranch}...${branch}`;
+    lines.push("");
+    lines.push(`\u26A0\uFE0F The release shipped, but I couldn't open the changelog PR: \`${ctx.prError}\``);
+    lines.push("");
+    lines.push(`Open it manually: ${compareUrl}`);
+    lines.push("");
+    lines.push(
+      'To let future releases open this PR automatically, enable *Settings \u2192 Actions \u2192 General \u2192 "Allow GitHub Actions to create and approve pull requests"* (both at repo and, if applicable, org level).'
+    );
+  }
   return lines.join("\n");
 }
 function buildFailureBody(tag, error2) {
@@ -34172,14 +34192,26 @@ async function executeRelease(plan, deps) {
     releaseUrl = rel.releaseUrl;
     core.info(`  ${releaseUrl}`);
     core.info(`Step 5/8: Opening changelog PR`);
-    const pr = await openReleasePR(plan, deps.octokit);
-    prUrl = pr.prUrl;
-    core.info(`  ${prUrl}`);
+    let prError = null;
+    try {
+      const pr = await openReleasePR(plan, deps.octokit);
+      prUrl = pr.prUrl;
+      core.info(`  ${prUrl}`);
+    } catch (err) {
+      prError = err instanceof Error ? err.message : String(err);
+      core.warning(`Could not open changelog PR: ${prError}`);
+      if (/not permitted/i.test(prError)) {
+        core.warning(
+          'Enable "Allow GitHub Actions to create and approve pull requests" at Settings \u2192 Actions \u2192 General \u2192 Workflow permissions (repo AND org if applicable), then open the PR manually from the pushed release branch.'
+        );
+      }
+    }
     core.info(`Step 6/8: Posting completion comment`);
     await tryPostCompletion(plan, deps.octokit, {
       releaseUrl,
       prUrl,
-      dryRun: false
+      dryRun: false,
+      ...prError ? { prError } : {}
     });
     core.setOutput("version", plan.nextVersion);
     core.setOutput("tag", tag);
