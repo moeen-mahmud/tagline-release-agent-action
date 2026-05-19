@@ -34343,6 +34343,9 @@ async function executeProposeRelease(plan, deps) {
     const pr = await openReleasePR(plan, deps.octokit, payload);
     prUrl = pr.prUrl;
     core.info(`  ${prUrl}`);
+    core.info(
+      `  embedded plan marker: tags=${payload.tags.length} draft=${payload.draft} issue=${payload.issueNumber}`
+    );
     core.info(`Step 5/5: Posting acknowledgement comment`);
     await tryPostCompletion(plan, deps.octokit, {
       kind: "propose",
@@ -34529,10 +34532,16 @@ async function run() {
     const octokit = github.getOctokit(githubToken);
     const workspaceRoot = process.env["GITHUB_WORKSPACE"] ?? process.cwd();
     const eventName = process.env["GITHUB_EVENT_NAME"] ?? "workflow_dispatch";
+    core2.info(`Tagline action starting \u2014 GITHUB_EVENT_NAME=${eventName}`);
+    core2.info(`  GITHUB_REPOSITORY=${process.env["GITHUB_REPOSITORY"] ?? "<unset>"}`);
+    core2.info(`  GITHUB_REF=${process.env["GITHUB_REF"] ?? "<unset>"}`);
+    core2.info(`  GITHUB_SHA=${process.env["GITHUB_SHA"] ?? "<unset>"}`);
     if (eventName === "pull_request") {
+      core2.info("Routing to Phase B (finalize) \u2014 pull_request event detected.");
       await runFinalize(octokit);
       return;
     }
+    core2.info(`Routing to Phase A (propose) \u2014 event "${eventName}" is not pull_request.`);
     await runPropose(octokit, workspaceRoot);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -34556,27 +34565,34 @@ async function runPropose(octokit, workspaceRoot) {
 async function runFinalize(octokit) {
   const eventPath = process.env["GITHUB_EVENT_PATH"];
   if (!eventPath) {
-    core2.warning("GITHUB_EVENT_PATH unset on pull_request event \u2014 skipping finalize.");
+    core2.setFailed("GITHUB_EVENT_PATH unset on pull_request event \u2014 cannot finalize.");
     return;
   }
   const raw = await import_node_fs3.promises.readFile(eventPath, "utf8");
   const event = JSON.parse(raw);
+  core2.info(
+    `Phase B input \u2014 action=${event.action ?? "<none>"} merged=${event.pull_request?.merged ?? "<none>"} head=${event.pull_request?.head?.ref ?? "<none>"} base=${event.pull_request?.base?.ref ?? "<none>"} number=${event.pull_request?.number ?? "<none>"} merge_sha=${event.pull_request?.merge_commit_sha ?? "<none>"}`
+  );
   if (event.action !== "closed") {
-    core2.info(`pull_request.${event.action ?? "?"} \u2014 skipping (only 'closed' triggers finalize).`);
+    core2.warning(
+      `pull_request.${event.action ?? "?"} \u2014 Phase B only runs on 'closed'. Check your workflow's pull_request types filter.`
+    );
     return;
   }
   if (!event.pull_request?.merged) {
-    core2.info("PR was closed without merging \u2014 skipping finalize.");
+    core2.info("PR was closed without merging \u2014 release cancelled, no tag created.");
     return;
   }
   const headRef = event.pull_request.head?.ref ?? "";
   if (!headRef.startsWith("release/")) {
-    core2.info(`PR head ref is "${headRef}" \u2014 skipping (finalize only runs on release/* branches).`);
+    core2.info(`PR head ref is "${headRef}" \u2014 not a release/* branch, skipping.`);
     return;
   }
   const mergeSha = event.pull_request.merge_commit_sha;
   if (!mergeSha) {
-    core2.setFailed("Merged PR has no merge_commit_sha \u2014 cannot finalize.");
+    core2.setFailed(
+      "Merged PR has no merge_commit_sha \u2014 GitHub may still be computing the merge commit. Re-run the workflow in 30s."
+    );
     return;
   }
   const owner = event.repository?.owner.login;
@@ -34584,6 +34600,16 @@ async function runFinalize(octokit) {
   if (!owner || !name) {
     core2.setFailed("Could not resolve repository owner/name from event payload.");
     return;
+  }
+  const body = event.pull_request.body ?? "";
+  const markerPresent = body.includes("<!-- tagline-plan-v1");
+  core2.info(
+    `Phase B body inspection \u2014 length=${body.length} marker_present=${markerPresent}`
+  );
+  if (!markerPresent && body.length > 0) {
+    const tail = body.slice(Math.max(0, body.length - 400));
+    core2.info(`PR body tail (last 400 chars):
+${tail}`);
   }
   const workspaceRoot = process.env["GITHUB_WORKSPACE"] ?? process.cwd();
   const result = await executeFinalizeRelease(
@@ -34599,6 +34625,10 @@ async function runFinalize(octokit) {
   );
   if (!result.success) {
     core2.setFailed(result.error ?? "Release finalize failed");
+  } else {
+    core2.info(
+      `Phase B done \u2014 tagged ${result.tagName} at ${mergeSha}, release: ${result.releaseUrl ?? "<no release URL>"}`
+    );
   }
 }
 void run();
