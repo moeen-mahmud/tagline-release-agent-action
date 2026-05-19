@@ -24805,23 +24805,6 @@ var require_dist2 = __commonJS({
 var core2 = __toESM(require_core(), 1);
 var github = __toESM(require_github(), 1);
 
-// ../../packages/shared/src/constants.ts
-var APP_DISPLAY_NAME = "Tagline";
-var APP_PACKAGE_NAME = "tagline-sh";
-var BOT_GIT_IDENTITY = {
-  name: `${APP_PACKAGE_NAME}[bot]`,
-  email: `${APP_PACKAGE_NAME}[bot]@users.noreply.github.com`
-};
-
-// ../../packages/shared/src/utils.ts
-function releaseBranchName(version) {
-  const stripped = version.startsWith("v") ? version.slice(1) : version;
-  return `release/v${stripped}`;
-}
-function releaseTagName(version) {
-  return version.startsWith("v") ? version : `v${version}`;
-}
-
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js
 var external_exports = {};
 __export(external_exports, {
@@ -28863,7 +28846,21 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// ../../packages/shared/src/schemas.ts
+// ../../packages/shared/dist/index.js
+var APP_DISPLAY_NAME = "Tagline";
+var APP_PACKAGE_NAME = "tagline-sh";
+var BOT_GIT_IDENTITY = {
+  name: `${APP_PACKAGE_NAME}[bot]`,
+  email: `${APP_PACKAGE_NAME}[bot]@users.noreply.github.com`
+};
+var RELEASE_BRANCH_PREFIX = "release/v";
+function releaseBranchName(version) {
+  const stripped = version.startsWith("v") ? version.slice(1) : version;
+  return `${RELEASE_BRANCH_PREFIX}${stripped}`;
+}
+function releaseTagName(version) {
+  return version.startsWith("v") ? version : `v${version}`;
+}
 var CommitTypeSchema = external_exports.enum([
   "feat",
   "fix",
@@ -28942,6 +28939,26 @@ var RepoConfigSchema = external_exports.object({
   customContext: external_exports.string(),
   rawContent: external_exports.string()
 });
+var ReleaseSummarySchema = external_exports.object({
+  version: external_exports.string().min(1),
+  date: external_exports.string().min(1),
+  headline: external_exports.string().min(1),
+  body: external_exports.string().min(1),
+  highlights: external_exports.array(external_exports.string().min(1)).min(1).max(5),
+  rawMarkdown: external_exports.string().min(1)
+});
+var PackageReleasePlanSchema = external_exports.object({
+  name: external_exports.string().min(1),
+  path: external_exports.string().min(1),
+  packageJsonPath: external_exports.string().min(1),
+  changelogPath: external_exports.string().min(1),
+  currentVersion: external_exports.string().min(1),
+  nextVersion: external_exports.string().min(1),
+  bumpType: BumpTypeSchema,
+  prs: external_exports.array(ParsedPRSchema),
+  changelogContent: external_exports.string(),
+  tagName: external_exports.string().min(1)
+});
 var ReleasePlanSchema = external_exports.object({
   repoOwner: external_exports.string().min(1),
   repoName: external_exports.string().min(1),
@@ -28952,8 +28969,14 @@ var ReleasePlanSchema = external_exports.object({
   lastTag: external_exports.string().nullable(),
   prs: external_exports.array(ParsedPRSchema),
   changelogContent: external_exports.string(),
+  // Required, not optional — the bot ALWAYS produces a summary (AI or
+  // deterministic fallback). Making this nullable would let stale bot
+  // builds slip a missing-summary plan past the action boundary unnoticed.
+  releaseSummary: ReleaseSummarySchema,
   isMonorepo: external_exports.boolean(),
   monorepoInfo: MonorepoInfoSchema.nullable(),
+  // Per-package plans (M3). Empty array for single-repo.
+  packages: external_exports.array(PackageReleasePlanSchema),
   isDraft: external_exports.boolean(),
   isDryRun: external_exports.boolean(),
   issueNumber: external_exports.number().int().nonnegative(),
@@ -28978,17 +29001,11 @@ var import_node_fs = require("fs");
 var import_node_path = __toESM(require("path"), 1);
 async function bumpVersion(plan, workspaceRoot) {
   const touched = [];
-  if (plan.isMonorepo && plan.monorepoInfo) {
-    for (const pkg of plan.monorepoInfo.packages) {
-      await rewriteVersion(import_node_path.default.join(workspaceRoot, pkg.packageJsonPath), plan.nextVersion);
+  if (plan.packages.length > 0) {
+    for (const pkg of plan.packages) {
+      const absPath = import_node_path.default.join(workspaceRoot, pkg.packageJsonPath);
+      await rewriteVersion(absPath, pkg.nextVersion);
       touched.push(pkg.packageJsonPath);
-    }
-    if (plan.monorepoInfo.rootPackage) {
-      const rootPath = plan.monorepoInfo.rootPackage.packageJsonPath;
-      if (await fileHasVersion(import_node_path.default.join(workspaceRoot, rootPath))) {
-        await rewriteVersion(import_node_path.default.join(workspaceRoot, rootPath), plan.nextVersion);
-        touched.push(rootPath);
-      }
     }
   } else {
     const rootPath = import_node_path.default.join(workspaceRoot, "package.json");
@@ -29036,11 +29053,10 @@ var CHANGELOG_HEADER = [
 ].join("\n");
 async function writeChangelog(plan, workspaceRoot) {
   const touched = [];
-  if (plan.isMonorepo && plan.monorepoInfo) {
-    for (const pkg of plan.monorepoInfo.packages) {
-      if (pkg.affectedPRs.length === 0) continue;
+  if (plan.packages.length > 0) {
+    for (const pkg of plan.packages) {
       const target = import_node_path2.default.join(workspaceRoot, pkg.changelogPath);
-      await prependToFile(target, plan.changelogContent);
+      await prependToFile(target, pkg.changelogContent);
       touched.push(pkg.changelogPath);
     }
     const aggregate = import_node_path2.default.join(workspaceRoot, "CHANGELOG.md");
@@ -34055,23 +34071,39 @@ async function commitAndTag(plan, workspaceRoot, deps = {}) {
   await git.addConfig("user.name", BOT_GIT_IDENTITY.name);
   await git.addConfig("user.email", BOT_GIT_IDENTITY.email);
   const branch = releaseBranchName(plan.nextVersion);
-  const tag = releaseTagName(plan.nextVersion);
-  const tags = await git.tags();
-  if (tags.all.includes(tag)) {
+  const desiredTags = plan.packages.length > 0 ? plan.packages.map((p2) => p2.tagName) : [releaseTagName(plan.nextVersion)];
+  const existing = await git.tags();
+  const conflicts2 = desiredTags.filter((t2) => existing.all.includes(t2));
+  if (conflicts2.length > 0) {
+    if (conflicts2.length === 1) {
+      throw new Error(
+        `Tag ${conflicts2[0]} already exists. Has this release already been triggered?`
+      );
+    }
     throw new Error(
-      `Tag ${tag} already exists. Has this release already been triggered?`
+      `Tags already exist: ${conflicts2.join(", ")}. Has this release already been triggered?`
     );
   }
   await git.checkoutLocalBranch(branch);
   await git.add(["-A"]);
-  const commitMessage = `chore(release): ${tag} [skip ci]`;
+  const commitTag = plan.packages.length > 0 ? releaseTagName(plan.nextVersion) : desiredTags[0];
+  const commitMessage = `chore(release): ${commitTag} [skip ci]`;
   const commit = await git.commit(commitMessage);
-  await git.addAnnotatedTag(tag, `Release ${tag}`);
+  for (const tag of desiredTags) {
+    await git.addAnnotatedTag(tag, `Release ${tag}`);
+  }
   if (!deps.skipPush) {
     await git.push(["-u", "origin", branch]);
-    await git.push(["origin", tag]);
+    for (const tag of desiredTags) {
+      await git.push(["origin", tag]);
+    }
   }
-  return { branch, tag, commitSha: commit.commit };
+  return {
+    branch,
+    tag: desiredTags.join(", "),
+    tags: desiredTags,
+    commitSha: commit.commit
+  };
 }
 
 // src/steps/github-release.ts
@@ -34083,11 +34115,14 @@ async function createGitHubRelease(plan, octokit) {
     repo: plan.repoName,
     tag_name: tag,
     name: tag,
-    body: plan.changelogContent,
+    body: buildReleaseBody(plan),
     draft: plan.isDraft,
     prerelease: isPrerelease
   });
   return { releaseUrl: res.data.html_url };
+}
+function buildReleaseBody(plan) {
+  return [plan.releaseSummary.rawMarkdown, "", "---", "", plan.changelogContent].join("\n");
 }
 
 // src/steps/open-pr.ts
@@ -34128,6 +34163,12 @@ function buildSuccessBody(plan, tag, ctx) {
   const lines = [`${APP_DISPLAY_NAME} released \`${tag}\` \u{1F389}`, ""];
   if (ctx.releaseUrl) lines.push(`- GitHub release: ${ctx.releaseUrl}`);
   if (ctx.prUrl) lines.push(`- Changelog PR: ${ctx.prUrl}`);
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push("**Ready to share:**");
+  lines.push("");
+  lines.push(plan.releaseSummary.rawMarkdown.trimEnd());
   if (!ctx.prUrl && ctx.prError) {
     const branch = releaseBranchName(plan.nextVersion);
     const compareUrl = `https://github.com/${plan.repoOwner}/${plan.repoName}/compare/${plan.baseBranch}...${branch}`;
