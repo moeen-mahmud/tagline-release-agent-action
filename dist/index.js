@@ -28956,7 +28956,11 @@ var PackageReleasePlanSchema = external_exports.object({
   currentVersion: external_exports.string().min(1),
   nextVersion: external_exports.string().min(1),
   bumpType: BumpTypeSchema,
-  prs: external_exports.array(ParsedPRSchema),
+  // `prs` is OPTIONAL in transport. The bot strips it out before
+  // workflow_dispatch (it's already baked into `changelogContent`). The
+  // action never re-reads PR data, so empty-array default is safe and
+  // shrinks the dispatch payload by 10–100× for large monorepos.
+  prs: external_exports.array(ParsedPRSchema).default([]),
   changelogContent: external_exports.string(),
   tagName: external_exports.string().min(1)
 });
@@ -28968,14 +28972,20 @@ var ReleasePlanSchema = external_exports.object({
   currentVersion: external_exports.string().min(1),
   nextVersion: external_exports.string().min(1),
   lastTag: external_exports.string().nullable(),
-  prs: external_exports.array(ParsedPRSchema),
+  // OPTIONAL in transport — see PackageReleasePlanSchema.prs above. The bot
+  // sends `[]` over the wire to stay under GitHub's `workflow_dispatch`
+  // input size limit; the rendered `changelogContent` is the canonical
+  // source from this point onward.
+  prs: external_exports.array(ParsedPRSchema).default([]),
   changelogContent: external_exports.string(),
   // Required, not optional — the bot ALWAYS produces a summary (AI or
   // deterministic fallback). Making this nullable would let stale bot
   // builds slip a missing-summary plan past the action boundary unnoticed.
   releaseSummary: ReleaseSummarySchema,
   isMonorepo: external_exports.boolean(),
-  monorepoInfo: MonorepoInfoSchema.nullable(),
+  // OPTIONAL in transport — large monorepoInfo with `affectedPRs` per
+  // package can dwarf the rest of the plan. The action doesn't read this.
+  monorepoInfo: MonorepoInfoSchema.nullable().default(null),
   // Per-package plans (M3). Empty array for single-repo.
   packages: external_exports.array(PackageReleasePlanSchema),
   isDraft: external_exports.boolean(),
