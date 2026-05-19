@@ -29028,11 +29028,30 @@ async function fileHasVersion(absPath) {
 }
 async function rewriteVersion(absPath, nextVersion) {
   const raw = await import_node_fs.promises.readFile(absPath, "utf8");
+  let currentVersion;
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.version === "string") {
+      currentVersion = parsed.version;
+    }
+  } catch {
+  }
+  if (currentVersion !== void 0) {
+    const escaped = currentVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`("version"\\s*:\\s*)"${escaped}"`);
+    if (re.test(raw)) {
+      const out = raw.replace(re, `$1"${nextVersion}"`);
+      if (out !== raw) {
+        await import_node_fs.promises.writeFile(absPath, out, "utf8");
+        return;
+      }
+    }
+  }
   const indent = detectIndent(raw);
-  const parsed = JSON.parse(raw);
-  parsed["version"] = nextVersion;
-  const out = JSON.stringify(parsed, null, indent) + (raw.endsWith("\n") ? "\n" : "");
-  await import_node_fs.promises.writeFile(absPath, out, "utf8");
+  const obj = JSON.parse(raw);
+  obj["version"] = nextVersion;
+  const fallback = JSON.stringify(obj, null, indent) + (raw.endsWith("\n") ? "\n" : "");
+  await import_node_fs.promises.writeFile(absPath, fallback, "utf8");
 }
 function detectIndent(source) {
   const match = /\n( {2,8})"/.exec(source);
