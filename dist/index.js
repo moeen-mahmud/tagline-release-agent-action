@@ -185,7 +185,7 @@ var require_file_command = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.prepareKeyValueMessage = exports2.issueFileCommand = void 0;
     var crypto = __importStar(require("crypto"));
-    var fs3 = __importStar(require("fs"));
+    var fs4 = __importStar(require("fs"));
     var os = __importStar(require("os"));
     var utils_1 = require_utils();
     function issueFileCommand(command, message) {
@@ -193,10 +193,10 @@ var require_file_command = __commonJS({
       if (!filePath) {
         throw new Error(`Unable to find environment variable for file command ${command}`);
       }
-      if (!fs3.existsSync(filePath)) {
+      if (!fs4.existsSync(filePath)) {
         throw new Error(`Missing file at path: ${filePath}`);
       }
-      fs3.appendFileSync(filePath, `${(0, utils_1.toCommandValue)(message)}${os.EOL}`, {
+      fs4.appendFileSync(filePath, `${(0, utils_1.toCommandValue)(message)}${os.EOL}`, {
         encoding: "utf8"
       });
     }
@@ -17598,12 +17598,12 @@ var require_lib = __commonJS({
             throw new Error("Client has already been disposed.");
           }
           const parsedUrl = new URL(requestUrl);
-          let info2 = this._prepareRequest(verb, parsedUrl, headers);
+          let info3 = this._prepareRequest(verb, parsedUrl, headers);
           const maxTries = this._allowRetries && RetryableHttpVerbs.includes(verb) ? this._maxRetries + 1 : 1;
           let numTries = 0;
           let response;
           do {
-            response = yield this.requestRaw(info2, data);
+            response = yield this.requestRaw(info3, data);
             if (response && response.message && response.message.statusCode === HttpCodes.Unauthorized) {
               let authenticationHandler;
               for (const handler2 of this.handlers) {
@@ -17613,7 +17613,7 @@ var require_lib = __commonJS({
                 }
               }
               if (authenticationHandler) {
-                return authenticationHandler.handleAuthentication(this, info2, data);
+                return authenticationHandler.handleAuthentication(this, info3, data);
               } else {
                 return response;
               }
@@ -17636,8 +17636,8 @@ var require_lib = __commonJS({
                   }
                 }
               }
-              info2 = this._prepareRequest(verb, parsedRedirectUrl, headers);
-              response = yield this.requestRaw(info2, data);
+              info3 = this._prepareRequest(verb, parsedRedirectUrl, headers);
+              response = yield this.requestRaw(info3, data);
               redirectsRemaining--;
             }
             if (!response.message.statusCode || !HttpResponseRetryCodes.includes(response.message.statusCode)) {
@@ -17666,7 +17666,7 @@ var require_lib = __commonJS({
        * @param info
        * @param data
        */
-      requestRaw(info2, data) {
+      requestRaw(info3, data) {
         return __awaiter(this, void 0, void 0, function* () {
           return new Promise((resolve, reject) => {
             function callbackForResult(err, res) {
@@ -17678,7 +17678,7 @@ var require_lib = __commonJS({
                 resolve(res);
               }
             }
-            this.requestRawWithCallback(info2, data, callbackForResult);
+            this.requestRawWithCallback(info3, data, callbackForResult);
           });
         });
       }
@@ -17688,12 +17688,12 @@ var require_lib = __commonJS({
        * @param data
        * @param onResult
        */
-      requestRawWithCallback(info2, data, onResult) {
+      requestRawWithCallback(info3, data, onResult) {
         if (typeof data === "string") {
-          if (!info2.options.headers) {
-            info2.options.headers = {};
+          if (!info3.options.headers) {
+            info3.options.headers = {};
           }
-          info2.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
+          info3.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
         }
         let callbackCalled = false;
         function handleResult2(err, res) {
@@ -17702,7 +17702,7 @@ var require_lib = __commonJS({
             onResult(err, res);
           }
         }
-        const req = info2.httpModule.request(info2.options, (msg) => {
+        const req = info3.httpModule.request(info3.options, (msg) => {
           const res = new HttpClientResponse(msg);
           handleResult2(void 0, res);
         });
@@ -17714,7 +17714,7 @@ var require_lib = __commonJS({
           if (socket) {
             socket.end();
           }
-          handleResult2(new Error(`Request timeout: ${info2.options.path}`));
+          handleResult2(new Error(`Request timeout: ${info3.options.path}`));
         });
         req.on("error", function(err) {
           handleResult2(err);
@@ -17750,27 +17750,27 @@ var require_lib = __commonJS({
         return this._getProxyAgentDispatcher(parsedUrl, proxyUrl);
       }
       _prepareRequest(method, requestUrl, headers) {
-        const info2 = {};
-        info2.parsedUrl = requestUrl;
-        const usingSsl = info2.parsedUrl.protocol === "https:";
-        info2.httpModule = usingSsl ? https : http;
+        const info3 = {};
+        info3.parsedUrl = requestUrl;
+        const usingSsl = info3.parsedUrl.protocol === "https:";
+        info3.httpModule = usingSsl ? https : http;
         const defaultPort = usingSsl ? 443 : 80;
-        info2.options = {};
-        info2.options.host = info2.parsedUrl.hostname;
-        info2.options.port = info2.parsedUrl.port ? parseInt(info2.parsedUrl.port) : defaultPort;
-        info2.options.path = (info2.parsedUrl.pathname || "") + (info2.parsedUrl.search || "");
-        info2.options.method = method;
-        info2.options.headers = this._mergeHeaders(headers);
+        info3.options = {};
+        info3.options.host = info3.parsedUrl.hostname;
+        info3.options.port = info3.parsedUrl.port ? parseInt(info3.parsedUrl.port) : defaultPort;
+        info3.options.path = (info3.parsedUrl.pathname || "") + (info3.parsedUrl.search || "");
+        info3.options.method = method;
+        info3.options.headers = this._mergeHeaders(headers);
         if (this.userAgent != null) {
-          info2.options.headers["user-agent"] = this.userAgent;
+          info3.options.headers["user-agent"] = this.userAgent;
         }
-        info2.options.agent = this._getAgent(info2.parsedUrl);
+        info3.options.agent = this._getAgent(info3.parsedUrl);
         if (this.handlers) {
           for (const handler2 of this.handlers) {
-            handler2.prepareRequest(info2.options);
+            handler2.prepareRequest(info3.options);
           }
         }
-        return info2;
+        return info3;
       }
       _mergeHeaders(headers) {
         if (this.requestOptions && this.requestOptions.headers) {
@@ -18522,12 +18522,12 @@ var require_io_util = __commonJS({
     var _a2;
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getCmdPath = exports2.tryGetExecutablePath = exports2.isRooted = exports2.isDirectory = exports2.exists = exports2.READONLY = exports2.UV_FS_O_EXLOCK = exports2.IS_WINDOWS = exports2.unlink = exports2.symlink = exports2.stat = exports2.rmdir = exports2.rm = exports2.rename = exports2.readlink = exports2.readdir = exports2.open = exports2.mkdir = exports2.lstat = exports2.copyFile = exports2.chmod = void 0;
-    var fs3 = __importStar(require("fs"));
+    var fs4 = __importStar(require("fs"));
     var path3 = __importStar(require("path"));
-    _a2 = fs3.promises, exports2.chmod = _a2.chmod, exports2.copyFile = _a2.copyFile, exports2.lstat = _a2.lstat, exports2.mkdir = _a2.mkdir, exports2.open = _a2.open, exports2.readdir = _a2.readdir, exports2.readlink = _a2.readlink, exports2.rename = _a2.rename, exports2.rm = _a2.rm, exports2.rmdir = _a2.rmdir, exports2.stat = _a2.stat, exports2.symlink = _a2.symlink, exports2.unlink = _a2.unlink;
+    _a2 = fs4.promises, exports2.chmod = _a2.chmod, exports2.copyFile = _a2.copyFile, exports2.lstat = _a2.lstat, exports2.mkdir = _a2.mkdir, exports2.open = _a2.open, exports2.readdir = _a2.readdir, exports2.readlink = _a2.readlink, exports2.rename = _a2.rename, exports2.rm = _a2.rm, exports2.rmdir = _a2.rmdir, exports2.stat = _a2.stat, exports2.symlink = _a2.symlink, exports2.unlink = _a2.unlink;
     exports2.IS_WINDOWS = process.platform === "win32";
     exports2.UV_FS_O_EXLOCK = 268435456;
-    exports2.READONLY = fs3.constants.O_RDONLY;
+    exports2.READONLY = fs4.constants.O_RDONLY;
     function exists2(fsPath) {
       return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -19752,18 +19752,18 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issueCommand)("error", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.error = error2;
-    function warning2(message, properties = {}) {
+    function warning3(message, properties = {}) {
       (0, command_1.issueCommand)("warning", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
-    exports2.warning = warning2;
+    exports2.warning = warning3;
     function notice(message, properties = {}) {
       (0, command_1.issueCommand)("notice", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.notice = notice;
-    function info2(message) {
+    function info3(message) {
       process.stdout.write(message + os.EOL);
     }
-    exports2.info = info2;
+    exports2.info = info3;
     function startGroup(name) {
       (0, command_1.issue)("group", name);
     }
@@ -24802,6 +24802,7 @@ var require_dist2 = __commonJS({
 });
 
 // src/main.ts
+var import_node_fs3 = require("fs");
 var core2 = __toESM(require_core(), 1);
 var github = __toESM(require_github(), 1);
 
@@ -30693,11 +30694,11 @@ function createLogger2(label, verbose, initialStep, infoDebugger = createLog()) 
   function step(phase) {
     const stepPrefix = phase && `[${phase}]` || "";
     const debug2 = debugDebugger && prefixedLogger(debugDebugger, stepPrefix) || NOOP;
-    const info2 = prefixedLogger(infoDebugger, `${labelPrefix} ${stepPrefix}`, debug2);
-    return Object.assign(debugDebugger ? debug2 : info2, {
+    const info3 = prefixedLogger(infoDebugger, `${labelPrefix} ${stepPrefix}`, debug2);
+    return Object.assign(debugDebugger ? debug2 : info3, {
       label,
       sibling,
-      info: info2,
+      info: info3,
       step
     });
   }
@@ -34066,58 +34067,57 @@ init_git_response_error();
 var simpleGit = gitInstanceFactory;
 
 // src/steps/git-operations.ts
-async function commitAndTag(plan, workspaceRoot, deps = {}) {
+async function commitAndPushBranch(plan, workspaceRoot, deps = {}) {
   const git = deps.git ?? simpleGit({ baseDir: workspaceRoot });
   await git.addConfig("user.name", BOT_GIT_IDENTITY.name);
   await git.addConfig("user.email", BOT_GIT_IDENTITY.email);
   const branch = releaseBranchName(plan.nextVersion);
-  const desiredTags = plan.packages.length > 0 ? plan.packages.map((p2) => p2.tagName) : [releaseTagName(plan.nextVersion)];
-  const existing = await git.tags();
-  const conflicts2 = desiredTags.filter((t2) => existing.all.includes(t2));
-  if (conflicts2.length > 0) {
-    if (conflicts2.length === 1) {
-      throw new Error(
-        `Tag ${conflicts2[0]} already exists. Has this release already been triggered?`
-      );
-    }
-    throw new Error(
-      `Tags already exist: ${conflicts2.join(", ")}. Has this release already been triggered?`
-    );
-  }
   await git.checkoutLocalBranch(branch);
   await git.add(["-A"]);
-  const commitTag = plan.packages.length > 0 ? releaseTagName(plan.nextVersion) : desiredTags[0];
-  const commitMessage = `chore(release): ${commitTag} [skip ci]`;
-  const commit = await git.commit(commitMessage);
-  for (const tag of desiredTags) {
-    await git.addAnnotatedTag(tag, `Release ${tag}`);
-  }
+  const headlineTag = releaseTagName(plan.nextVersion);
+  const commit = await git.commit(`chore(release): ${headlineTag} [skip ci]`);
   if (!deps.skipPush) {
     await git.push(["-u", "origin", branch]);
-    for (const tag of desiredTags) {
-      await git.push(["origin", tag]);
+  }
+  return { branch, commitSha: commit.commit };
+}
+async function tagMergeCommit(input, octokit) {
+  const created = [];
+  const skipped = [];
+  for (const tag of input.tags) {
+    try {
+      await octokit.rest.git.createRef({
+        owner: input.repoOwner,
+        repo: input.repoName,
+        ref: `refs/tags/${tag}`,
+        sha: input.sha
+      });
+      created.push(tag);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/already exists/i.test(message)) {
+        skipped.push(tag);
+        continue;
+      }
+      throw err;
     }
   }
-  return {
-    branch,
-    tag: desiredTags.join(", "),
-    tags: desiredTags,
-    commitSha: commit.commit
-  };
+  return { created, skipped };
 }
 
 // src/steps/github-release.ts
-async function createGitHubRelease(plan, octokit) {
-  const tag = releaseTagName(plan.nextVersion);
-  const isPrerelease = /-(rc|alpha|beta|next)\./.test(plan.nextVersion);
+function isPrereleaseTag(tag) {
+  return /-(rc|alpha|beta|next)\./.test(tag);
+}
+async function createGitHubReleaseFor(input, octokit) {
   const res = await octokit.rest.repos.createRelease({
-    owner: plan.repoOwner,
-    repo: plan.repoName,
-    tag_name: tag,
-    name: tag,
-    body: buildReleaseBody(plan),
-    draft: plan.isDraft,
-    prerelease: isPrerelease
+    owner: input.repoOwner,
+    repo: input.repoName,
+    tag_name: input.tag,
+    name: input.name,
+    body: input.body,
+    draft: input.draft,
+    prerelease: input.prerelease ?? isPrereleaseTag(input.tag)
   });
   return { releaseUrl: res.data.html_url };
 }
@@ -34126,7 +34126,45 @@ function buildReleaseBody(plan) {
 }
 
 // src/steps/open-pr.ts
-async function openReleasePR(plan, octokit) {
+var PLAN_MARKER_START = "<!-- tagline-plan-v1";
+var PLAN_MARKER_END = "-->";
+function encodeFinalizePlan(payload) {
+  const json = JSON.stringify(payload);
+  return Buffer.from(json, "utf8").toString("base64");
+}
+function extractFinalizePlan(prBody) {
+  if (!prBody) return null;
+  const startIdx = prBody.indexOf(PLAN_MARKER_START);
+  if (startIdx === -1) return null;
+  const afterStart = startIdx + PLAN_MARKER_START.length;
+  const endIdx = prBody.indexOf(PLAN_MARKER_END, afterStart);
+  if (endIdx === -1) return null;
+  const encoded = prBody.slice(afterStart, endIdx).trim();
+  try {
+    const json = Buffer.from(encoded, "base64").toString("utf8");
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+function buildPRBody(plan, payload) {
+  return [
+    plan.releaseSummary.rawMarkdown,
+    "",
+    "---",
+    "",
+    plan.changelogContent,
+    "",
+    "---",
+    "",
+    "_Once you merge this PR, Tagline will tag the merge commit and publish a GitHub Release. Close the PR to cancel \u2014 no tag is created until merge._",
+    "",
+    `${PLAN_MARKER_START}`,
+    encodeFinalizePlan(payload),
+    PLAN_MARKER_END
+  ].join("\n");
+}
+async function openReleasePR(plan, octokit, payload) {
   const tag = releaseTagName(plan.nextVersion);
   const branch = releaseBranchName(plan.nextVersion);
   const res = await octokit.rest.pulls.create({
@@ -34135,7 +34173,7 @@ async function openReleasePR(plan, octokit) {
     title: `chore(release): ${tag}`,
     head: branch,
     base: plan.baseBranch,
-    body: plan.changelogContent
+    body: buildPRBody(plan, payload)
   });
   return { prUrl: res.data.html_url, prNumber: res.data.number };
 }
@@ -34160,6 +34198,39 @@ function buildSuccessBody(plan, tag, ctx) {
       "Review the report and approve again without `--dry-run` to ship it."
     ].join("\n");
   }
+  const phase = ctx.phase ?? "propose";
+  if (phase === "propose") {
+    const lines2 = [
+      `${APP_DISPLAY_NAME} prepared the release \`${tag}\` \u{1F4DD}`,
+      ""
+    ];
+    if (ctx.prUrl) {
+      lines2.push(`- Release PR: ${ctx.prUrl}`);
+    }
+    lines2.push("");
+    lines2.push(
+      "**Next:** review the PR. When you merge it, Tagline will tag the merge commit and publish the GitHub Release automatically. Close the PR to cancel \u2014 nothing is tagged or released until merge."
+    );
+    lines2.push("");
+    lines2.push("---");
+    lines2.push("");
+    lines2.push("**Preview (will publish on merge):**");
+    lines2.push("");
+    lines2.push(plan.releaseSummary.rawMarkdown.trimEnd());
+    if (!ctx.prUrl && ctx.prError) {
+      const branch = releaseBranchName(plan.nextVersion);
+      const compareUrl = `https://github.com/${plan.repoOwner}/${plan.repoName}/compare/${plan.baseBranch}...${branch}`;
+      lines2.push("");
+      lines2.push(`\u26A0\uFE0F The release branch was pushed, but I couldn't open the PR: \`${ctx.prError}\``);
+      lines2.push("");
+      lines2.push(`Open it manually: ${compareUrl}`);
+      lines2.push("");
+      lines2.push(
+        'To let future releases open this PR automatically, enable *Settings \u2192 Actions \u2192 General \u2192 "Allow GitHub Actions to create and approve pull requests"* (both at repo and, if applicable, org level).'
+      );
+    }
+    return lines2.join("\n");
+  }
   const lines = [`${APP_DISPLAY_NAME} released \`${tag}\` \u{1F389}`, ""];
   if (ctx.releaseUrl) lines.push(`- GitHub release: ${ctx.releaseUrl}`);
   if (ctx.prUrl) lines.push(`- Changelog PR: ${ctx.prUrl}`);
@@ -34169,18 +34240,6 @@ function buildSuccessBody(plan, tag, ctx) {
   lines.push("**Ready to share:**");
   lines.push("");
   lines.push(plan.releaseSummary.rawMarkdown.trimEnd());
-  if (!ctx.prUrl && ctx.prError) {
-    const branch = releaseBranchName(plan.nextVersion);
-    const compareUrl = `https://github.com/${plan.repoOwner}/${plan.repoName}/compare/${plan.baseBranch}...${branch}`;
-    lines.push("");
-    lines.push(`\u26A0\uFE0F The release shipped, but I couldn't open the changelog PR: \`${ctx.prError}\``);
-    lines.push("");
-    lines.push(`Open it manually: ${compareUrl}`);
-    lines.push("");
-    lines.push(
-      'To let future releases open this PR automatically, enable *Settings \u2192 Actions \u2192 General \u2192 "Allow GitHub Actions to create and approve pull requests"* (both at repo and, if applicable, org level).'
-    );
-  }
   return lines.join("\n");
 }
 function buildFailureBody(tag, error2) {
@@ -34196,22 +34255,50 @@ function buildFailureBody(tag, error2) {
 }
 
 // src/release-executor.ts
-async function executeRelease(plan, deps) {
+function buildFinalizePayload(plan) {
+  const isMonorepo = plan.packages.length > 0;
+  if (!isMonorepo) {
+    const tag = releaseTagName(plan.nextVersion);
+    return {
+      nextVersion: plan.nextVersion,
+      tags: [tag],
+      releaseBodies: [buildReleaseBody(plan)],
+      releaseNames: [tag],
+      draft: plan.isDraft,
+      issueNumber: plan.issueNumber,
+      summaryMarkdown: plan.releaseSummary.rawMarkdown
+    };
+  }
+  const tags = plan.packages.map((p2) => p2.tagName);
+  const releaseBodies = plan.packages.map(
+    (p2) => [plan.releaseSummary.rawMarkdown, "", "---", "", p2.changelogContent].join("\n")
+  );
+  const releaseNames = plan.packages.map((p2) => p2.tagName);
+  return {
+    nextVersion: plan.nextVersion,
+    tags,
+    releaseBodies,
+    releaseNames,
+    draft: plan.isDraft,
+    issueNumber: plan.issueNumber,
+    summaryMarkdown: plan.releaseSummary.rawMarkdown
+  };
+}
+async function executeProposeRelease(plan, deps) {
   const tag = releaseTagName(plan.nextVersion);
   const branch = releaseBranchName(plan.nextVersion);
-  let releaseUrl = null;
   let prUrl = null;
   try {
-    core.info(`Step 1/8: Bumping versions to ${plan.nextVersion}`);
+    core.info(`Step 1/5: Bumping versions to ${plan.nextVersion}`);
     const bumped = await bumpVersion(plan, deps.workspaceRoot);
     core.info(`  bumped ${bumped.files.length} file(s)`);
-    core.info(`Step 2/8: Writing CHANGELOG.md`);
+    core.info(`Step 2/5: Writing CHANGELOG.md`);
     const changelog = await writeChangelog(plan, deps.workspaceRoot);
     core.info(`  wrote ${changelog.files.length} file(s)`);
     if (plan.isDryRun) {
-      core.info("Dry run: skipping git/GitHub writes.");
+      core.info("Dry run: skipping git/PR writes.");
       await tryPostCompletion(plan, deps.octokit, {
-        releaseUrl: null,
+        kind: "propose",
         prUrl: null,
         dryRun: true
       });
@@ -34225,53 +34312,41 @@ async function executeRelease(plan, deps) {
         isDryRun: true
       };
     }
-    core.info(`Step 3/8: Commit + tag on ${branch}`);
-    const git = await commitAndTag(plan, deps.workspaceRoot, deps.git ? { git: deps.git } : {});
-    core.info(`  branch=${git.branch} tag=${git.tag} sha=${git.commitSha}`);
-    core.info(`Step 4/8: Creating GitHub release`);
-    const rel = await createGitHubRelease(plan, deps.octokit);
-    releaseUrl = rel.releaseUrl;
-    core.info(`  ${releaseUrl}`);
-    core.info(`Step 5/8: Opening changelog PR`);
-    let prError = null;
-    try {
-      const pr = await openReleasePR(plan, deps.octokit);
-      prUrl = pr.prUrl;
-      core.info(`  ${prUrl}`);
-    } catch (err) {
-      prError = err instanceof Error ? err.message : String(err);
-      core.warning(`Could not open changelog PR: ${prError}`);
-      if (/not permitted/i.test(prError)) {
-        core.warning(
-          'Enable "Allow GitHub Actions to create and approve pull requests" at Settings \u2192 Actions \u2192 General \u2192 Workflow permissions (repo AND org if applicable), then open the PR manually from the pushed release branch.'
-        );
-      }
-    }
-    core.info(`Step 6/8: Posting completion comment`);
+    core.info(`Step 3/5: Commit + push branch ${branch}`);
+    const git = await commitAndPushBranch(
+      plan,
+      deps.workspaceRoot,
+      deps.git ? { git: deps.git } : {}
+    );
+    core.info(`  branch=${git.branch} sha=${git.commitSha}`);
+    core.info(`Step 4/5: Opening release PR`);
+    const payload = buildFinalizePayload(plan);
+    const pr = await openReleasePR(plan, deps.octokit, payload);
+    prUrl = pr.prUrl;
+    core.info(`  ${prUrl}`);
+    core.info(`Step 5/5: Posting acknowledgement comment`);
     await tryPostCompletion(plan, deps.octokit, {
-      releaseUrl,
+      kind: "propose",
       prUrl,
-      dryRun: false,
-      ...prError ? { prError } : {}
+      dryRun: false
     });
     core.setOutput("version", plan.nextVersion);
     core.setOutput("tag", tag);
-    core.setOutput("release_url", releaseUrl);
     core.setOutput("pr_url", prUrl);
     return {
       success: true,
       nextVersion: plan.nextVersion,
       tagName: tag,
-      releaseUrl,
+      releaseUrl: null,
       prUrl,
       error: null,
       isDryRun: false
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    core.error(`Release failed: ${message}`);
+    core.error(`Release proposal failed: ${message}`);
     await tryPostCompletion(plan, deps.octokit, {
-      releaseUrl,
+      kind: "propose",
       prUrl,
       dryRun: plan.isDryRun,
       error: message
@@ -34280,16 +34355,116 @@ async function executeRelease(plan, deps) {
       success: false,
       nextVersion: plan.nextVersion,
       tagName: tag,
-      releaseUrl,
+      releaseUrl: null,
       prUrl,
       error: message,
       isDryRun: plan.isDryRun
     };
   }
 }
+async function executeFinalizeRelease(input, deps) {
+  const payload = extractFinalizePlan(input.prBody);
+  if (!payload) {
+    const message = "Tagline could not find the embedded plan marker in the release PR body. The release PR may have been edited or opened by hand. Skipping tag + release.";
+    core.warning(message);
+    return {
+      success: false,
+      nextVersion: "0.0.0",
+      tagName: "",
+      releaseUrl: null,
+      prUrl: null,
+      error: message,
+      isDryRun: false
+    };
+  }
+  try {
+    core.info(`Step 1/3: Tagging merge commit ${input.mergeSha} with ${payload.tags.length} tag(s)`);
+    const tagged = await tagMergeCommit(
+      {
+        repoOwner: input.repoOwner,
+        repoName: input.repoName,
+        sha: input.mergeSha,
+        tags: payload.tags
+      },
+      deps.octokit
+    );
+    core.info(`  created: [${tagged.created.join(", ")}] skipped: [${tagged.skipped.join(", ")}]`);
+    core.info(`Step 2/3: Creating ${payload.tags.length} GitHub Release(s)`);
+    const releaseUrls = [];
+    for (let i2 = 0; i2 < payload.tags.length; i2 += 1) {
+      const tag = payload.tags[i2];
+      const body = payload.releaseBodies[i2] ?? "";
+      const name = payload.releaseNames[i2] ?? tag;
+      try {
+        const rel = await createGitHubReleaseFor(
+          {
+            repoOwner: input.repoOwner,
+            repoName: input.repoName,
+            tag,
+            name,
+            body,
+            draft: payload.draft
+          },
+          deps.octokit
+        );
+        releaseUrls.push(rel.releaseUrl);
+        core.info(`  ${tag} \u2192 ${rel.releaseUrl}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (/already_exists|already exists/i.test(message)) {
+          core.info(`  ${tag} \u2192 release already exists, skipping`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    core.info(`Step 3/3: Commenting on PR #${input.prNumber}`);
+    await tryPostFinalizeComment({
+      octokit: deps.octokit,
+      repoOwner: input.repoOwner,
+      repoName: input.repoName,
+      prNumber: input.prNumber,
+      tags: payload.tags,
+      releaseUrls,
+      summaryMarkdown: payload.summaryMarkdown
+    });
+    const primaryTag = payload.tags[0] ?? releaseTagName(payload.nextVersion);
+    const primaryUrl = releaseUrls[0] ?? null;
+    core.setOutput("version", payload.nextVersion);
+    core.setOutput("tag", primaryTag);
+    core.setOutput("release_url", primaryUrl);
+    return {
+      success: true,
+      nextVersion: payload.nextVersion,
+      tagName: primaryTag,
+      releaseUrl: primaryUrl,
+      prUrl: null,
+      error: null,
+      isDryRun: false
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    core.error(`Release finalize failed: ${message}`);
+    return {
+      success: false,
+      nextVersion: payload.nextVersion,
+      tagName: payload.tags[0] ?? "",
+      releaseUrl: null,
+      prUrl: null,
+      error: message,
+      isDryRun: false
+    };
+  }
+}
 async function tryPostCompletion(plan, octokit, ctx) {
   try {
-    await postCompletionComment(plan, octokit, ctx);
+    await postCompletionComment(plan, octokit, {
+      releaseUrl: null,
+      prUrl: ctx.prUrl,
+      dryRun: ctx.dryRun,
+      ...ctx.error ? { error: ctx.error } : {},
+      phase: "propose"
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     core.warning(
@@ -34297,28 +34472,114 @@ async function tryPostCompletion(plan, octokit, ctx) {
     );
   }
 }
+async function tryPostFinalizeComment(args) {
+  const lines = [];
+  if (args.tags.length === 1) {
+    lines.push(`Released \`${args.tags[0]}\` \u{1F389}`);
+  } else {
+    lines.push(`Released ${args.tags.length} packages \u{1F389}`);
+  }
+  lines.push("");
+  for (let i2 = 0; i2 < args.tags.length; i2 += 1) {
+    const url = args.releaseUrls[i2];
+    if (url) lines.push(`- \`${args.tags[i2]}\` \u2192 ${url}`);
+  }
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push("**Ready to share:**");
+  lines.push("");
+  lines.push(args.summaryMarkdown.trimEnd());
+  try {
+    await args.octokit.rest.issues.createComment({
+      owner: args.repoOwner,
+      repo: args.repoName,
+      issue_number: args.prNumber,
+      body: lines.join("\n")
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    core.warning(`Could not post finalize comment: ${message}.`);
+  }
+}
 
 // src/main.ts
 async function run() {
   try {
-    const releasePlanInput = core2.getInput("release_plan", { required: true });
     const githubToken = core2.getInput("github_token", { required: true });
-    const issueNumberRaw = core2.getInput("issue_number");
-    const dryRunRaw = core2.getInput("dry_run");
-    const plan = ReleasePlanSchema.parse(JSON.parse(releasePlanInput));
-    if (dryRunRaw === "true") plan.isDryRun = true;
-    if (issueNumberRaw && /^\d+$/.test(issueNumberRaw)) {
-      plan.issueNumber = Number(issueNumberRaw);
-    }
     const octokit = github.getOctokit(githubToken);
     const workspaceRoot = process.env["GITHUB_WORKSPACE"] ?? process.cwd();
-    const result = await executeRelease(plan, { octokit, workspaceRoot });
-    if (!result.success) {
-      core2.setFailed(result.error ?? "Release failed");
+    const eventName = process.env["GITHUB_EVENT_NAME"] ?? "workflow_dispatch";
+    if (eventName === "pull_request") {
+      await runFinalize(octokit);
+      return;
     }
+    await runPropose(octokit, workspaceRoot);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     core2.setFailed(`Tagline action crashed: ${message}`);
+  }
+}
+async function runPropose(octokit, workspaceRoot) {
+  const releasePlanInput = core2.getInput("release_plan", { required: true });
+  const issueNumberRaw = core2.getInput("issue_number");
+  const dryRunRaw = core2.getInput("dry_run");
+  const plan = ReleasePlanSchema.parse(JSON.parse(releasePlanInput));
+  if (dryRunRaw === "true") plan.isDryRun = true;
+  if (issueNumberRaw && /^\d+$/.test(issueNumberRaw)) {
+    plan.issueNumber = Number(issueNumberRaw);
+  }
+  const result = await executeProposeRelease(plan, { octokit, workspaceRoot });
+  if (!result.success) {
+    core2.setFailed(result.error ?? "Release proposal failed");
+  }
+}
+async function runFinalize(octokit) {
+  const eventPath = process.env["GITHUB_EVENT_PATH"];
+  if (!eventPath) {
+    core2.warning("GITHUB_EVENT_PATH unset on pull_request event \u2014 skipping finalize.");
+    return;
+  }
+  const raw = await import_node_fs3.promises.readFile(eventPath, "utf8");
+  const event = JSON.parse(raw);
+  if (event.action !== "closed") {
+    core2.info(`pull_request.${event.action ?? "?"} \u2014 skipping (only 'closed' triggers finalize).`);
+    return;
+  }
+  if (!event.pull_request?.merged) {
+    core2.info("PR was closed without merging \u2014 skipping finalize.");
+    return;
+  }
+  const headRef = event.pull_request.head?.ref ?? "";
+  if (!headRef.startsWith("release/")) {
+    core2.info(`PR head ref is "${headRef}" \u2014 skipping (finalize only runs on release/* branches).`);
+    return;
+  }
+  const mergeSha = event.pull_request.merge_commit_sha;
+  if (!mergeSha) {
+    core2.setFailed("Merged PR has no merge_commit_sha \u2014 cannot finalize.");
+    return;
+  }
+  const owner = event.repository?.owner.login;
+  const name = event.repository?.name;
+  if (!owner || !name) {
+    core2.setFailed("Could not resolve repository owner/name from event payload.");
+    return;
+  }
+  const workspaceRoot = process.env["GITHUB_WORKSPACE"] ?? process.cwd();
+  const result = await executeFinalizeRelease(
+    {
+      repoOwner: owner,
+      repoName: name,
+      mergeSha,
+      prNumber: event.pull_request.number,
+      prBody: event.pull_request.body ?? null,
+      headRef
+    },
+    { octokit, workspaceRoot }
+  );
+  if (!result.success) {
+    core2.setFailed(result.error ?? "Release finalize failed");
   }
 }
 void run();
