@@ -34394,6 +34394,25 @@ async function executeProposeRelease(plan, deps) {
     };
   }
 }
+async function findReleasePRForCommit(octokit, repoOwner, repoName, sha) {
+  const res = await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+    owner: repoOwner,
+    repo: repoName,
+    commit_sha: sha
+  });
+  const releasePR = res.data.find(
+    (pr) => pr.merge_commit_sha === sha && pr.merged_at !== null && pr.head.ref.startsWith("release/")
+  );
+  if (!releasePR) return null;
+  return {
+    repoOwner,
+    repoName,
+    mergeSha: sha,
+    prNumber: releasePR.number,
+    prBody: releasePR.body,
+    headRef: releasePR.head.ref
+  };
+}
 async function executeFinalizeRelease(input, deps) {
   const payload = extractFinalizePlan(input.prBody);
   if (!payload) {
@@ -34546,12 +34565,17 @@ async function run() {
     core2.info(`  GITHUB_REPOSITORY=${process.env["GITHUB_REPOSITORY"] ?? "<unset>"}`);
     core2.info(`  GITHUB_REF=${process.env["GITHUB_REF"] ?? "<unset>"}`);
     core2.info(`  GITHUB_SHA=${process.env["GITHUB_SHA"] ?? "<unset>"}`);
-    if (eventName === "pull_request") {
-      core2.info("Routing to Phase B (finalize) \u2014 pull_request event detected.");
-      await runFinalize(octokit);
+    if (eventName === "push") {
+      core2.info("Routing to Phase B (finalize via push) \u2014 checking if HEAD is a release-PR merge.");
+      await runFinalizeFromPush(octokit, workspaceRoot);
       return;
     }
-    core2.info(`Routing to Phase A (propose) \u2014 event "${eventName}" is not pull_request.`);
+    if (eventName === "pull_request") {
+      core2.info("Routing to Phase B (finalize via pull_request) \u2014 legacy PAT path.");
+      await runFinalize(octokit, workspaceRoot);
+      return;
+    }
+    core2.info(`Routing to Phase A (propose) \u2014 event "${eventName}" is workflow_dispatch.`);
     await runPropose(octokit, workspaceRoot);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -34572,7 +34596,7 @@ async function runPropose(octokit, workspaceRoot) {
     core2.setFailed(result.error ?? "Release proposal failed");
   }
 }
-async function runFinalize(octokit) {
+async function runFinalize(octokit, workspaceRoot) {
   const eventPath = process.env["GITHUB_EVENT_PATH"];
   if (!eventPath) {
     core2.setFailed("GITHUB_EVENT_PATH unset on pull_request event \u2014 cannot finalize.");
@@ -34621,7 +34645,6 @@ async function runFinalize(octokit) {
     core2.info(`PR body tail (last 400 chars):
 ${tail}`);
   }
-  const workspaceRoot = process.env["GITHUB_WORKSPACE"] ?? process.cwd();
   const result = await executeFinalizeRelease(
     {
       repoOwner: owner,
@@ -34638,6 +34661,46 @@ ${tail}`);
   } else {
     core2.info(
       `Phase B done \u2014 tagged ${result.tagName} at ${mergeSha}, release: ${result.releaseUrl ?? "<no release URL>"}`
+    );
+  }
+}
+async function runFinalizeFromPush(octokit, workspaceRoot) {
+  const sha = process.env["GITHUB_SHA"];
+  const repoEnv = process.env["GITHUB_REPOSITORY"];
+  if (!sha || !repoEnv) {
+    core2.setFailed(
+      "GITHUB_SHA or GITHUB_REPOSITORY unset on push event \u2014 cannot determine commit to finalize."
+    );
+    return;
+  }
+  const [owner, name] = repoEnv.split("/");
+  if (!owner || !name) {
+    core2.setFailed(`GITHUB_REPOSITORY is malformed: "${repoEnv}"`);
+    return;
+  }
+  const finalizeInput = await findReleasePRForCommit(octokit, owner, name, sha);
+  if (!finalizeInput) {
+    core2.info(
+      `Push ${sha} is not a release-PR merge \u2014 no Phase B work to do (this is normal for non-release pushes).`
+    );
+    return;
+  }
+  const body = finalizeInput.prBody ?? "";
+  const markerPresent = body.includes("<!-- tagline-plan-v1");
+  core2.info(
+    `Detected release PR #${finalizeInput.prNumber} (head=${finalizeInput.headRef}) merged at ${sha}. body length=${body.length} marker_present=${markerPresent}`
+  );
+  if (!markerPresent && body.length > 0) {
+    const tail = body.slice(Math.max(0, body.length - 400));
+    core2.info(`PR body tail (last 400 chars):
+${tail}`);
+  }
+  const result = await executeFinalizeRelease(finalizeInput, { octokit, workspaceRoot });
+  if (!result.success) {
+    core2.setFailed(result.error ?? "Release finalize failed");
+  } else {
+    core2.info(
+      `Phase B done \u2014 tagged ${result.tagName} at ${sha}, release: ${result.releaseUrl ?? "<no release URL>"}`
     );
   }
 }
