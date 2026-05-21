@@ -17598,12 +17598,12 @@ var require_lib = __commonJS({
             throw new Error("Client has already been disposed.");
           }
           const parsedUrl = new URL(requestUrl);
-          let info3 = this._prepareRequest(verb, parsedUrl, headers);
+          let info4 = this._prepareRequest(verb, parsedUrl, headers);
           const maxTries = this._allowRetries && RetryableHttpVerbs.includes(verb) ? this._maxRetries + 1 : 1;
           let numTries = 0;
           let response;
           do {
-            response = yield this.requestRaw(info3, data);
+            response = yield this.requestRaw(info4, data);
             if (response && response.message && response.message.statusCode === HttpCodes.Unauthorized) {
               let authenticationHandler;
               for (const handler2 of this.handlers) {
@@ -17613,7 +17613,7 @@ var require_lib = __commonJS({
                 }
               }
               if (authenticationHandler) {
-                return authenticationHandler.handleAuthentication(this, info3, data);
+                return authenticationHandler.handleAuthentication(this, info4, data);
               } else {
                 return response;
               }
@@ -17636,8 +17636,8 @@ var require_lib = __commonJS({
                   }
                 }
               }
-              info3 = this._prepareRequest(verb, parsedRedirectUrl, headers);
-              response = yield this.requestRaw(info3, data);
+              info4 = this._prepareRequest(verb, parsedRedirectUrl, headers);
+              response = yield this.requestRaw(info4, data);
               redirectsRemaining--;
             }
             if (!response.message.statusCode || !HttpResponseRetryCodes.includes(response.message.statusCode)) {
@@ -17666,7 +17666,7 @@ var require_lib = __commonJS({
        * @param info
        * @param data
        */
-      requestRaw(info3, data) {
+      requestRaw(info4, data) {
         return __awaiter(this, void 0, void 0, function* () {
           return new Promise((resolve, reject) => {
             function callbackForResult(err, res) {
@@ -17678,7 +17678,7 @@ var require_lib = __commonJS({
                 resolve(res);
               }
             }
-            this.requestRawWithCallback(info3, data, callbackForResult);
+            this.requestRawWithCallback(info4, data, callbackForResult);
           });
         });
       }
@@ -17688,12 +17688,12 @@ var require_lib = __commonJS({
        * @param data
        * @param onResult
        */
-      requestRawWithCallback(info3, data, onResult) {
+      requestRawWithCallback(info4, data, onResult) {
         if (typeof data === "string") {
-          if (!info3.options.headers) {
-            info3.options.headers = {};
+          if (!info4.options.headers) {
+            info4.options.headers = {};
           }
-          info3.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
+          info4.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
         }
         let callbackCalled = false;
         function handleResult2(err, res) {
@@ -17702,7 +17702,7 @@ var require_lib = __commonJS({
             onResult(err, res);
           }
         }
-        const req = info3.httpModule.request(info3.options, (msg) => {
+        const req = info4.httpModule.request(info4.options, (msg) => {
           const res = new HttpClientResponse(msg);
           handleResult2(void 0, res);
         });
@@ -17714,7 +17714,7 @@ var require_lib = __commonJS({
           if (socket) {
             socket.end();
           }
-          handleResult2(new Error(`Request timeout: ${info3.options.path}`));
+          handleResult2(new Error(`Request timeout: ${info4.options.path}`));
         });
         req.on("error", function(err) {
           handleResult2(err);
@@ -17750,27 +17750,27 @@ var require_lib = __commonJS({
         return this._getProxyAgentDispatcher(parsedUrl, proxyUrl);
       }
       _prepareRequest(method, requestUrl, headers) {
-        const info3 = {};
-        info3.parsedUrl = requestUrl;
-        const usingSsl = info3.parsedUrl.protocol === "https:";
-        info3.httpModule = usingSsl ? https : http;
+        const info4 = {};
+        info4.parsedUrl = requestUrl;
+        const usingSsl = info4.parsedUrl.protocol === "https:";
+        info4.httpModule = usingSsl ? https : http;
         const defaultPort = usingSsl ? 443 : 80;
-        info3.options = {};
-        info3.options.host = info3.parsedUrl.hostname;
-        info3.options.port = info3.parsedUrl.port ? parseInt(info3.parsedUrl.port) : defaultPort;
-        info3.options.path = (info3.parsedUrl.pathname || "") + (info3.parsedUrl.search || "");
-        info3.options.method = method;
-        info3.options.headers = this._mergeHeaders(headers);
+        info4.options = {};
+        info4.options.host = info4.parsedUrl.hostname;
+        info4.options.port = info4.parsedUrl.port ? parseInt(info4.parsedUrl.port) : defaultPort;
+        info4.options.path = (info4.parsedUrl.pathname || "") + (info4.parsedUrl.search || "");
+        info4.options.method = method;
+        info4.options.headers = this._mergeHeaders(headers);
         if (this.userAgent != null) {
-          info3.options.headers["user-agent"] = this.userAgent;
+          info4.options.headers["user-agent"] = this.userAgent;
         }
-        info3.options.agent = this._getAgent(info3.parsedUrl);
+        info4.options.agent = this._getAgent(info4.parsedUrl);
         if (this.handlers) {
           for (const handler2 of this.handlers) {
-            handler2.prepareRequest(info3.options);
+            handler2.prepareRequest(info4.options);
           }
         }
-        return info3;
+        return info4;
       }
       _mergeHeaders(headers) {
         if (this.requestOptions && this.requestOptions.headers) {
@@ -19760,10 +19760,10 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issueCommand)("notice", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.notice = notice;
-    function info3(message) {
+    function info4(message) {
       process.stdout.write(message + os.EOL);
     }
-    exports2.info = info3;
+    exports2.info = info4;
     function startGroup(name) {
       (0, command_1.issue)("group", name);
     }
@@ -24803,8 +24803,26 @@ var require_dist2 = __commonJS({
 
 // src/main.ts
 var import_node_fs3 = require("fs");
-var core2 = __toESM(require_core(), 1);
+var core3 = __toESM(require_core(), 1);
 var github = __toESM(require_github(), 1);
+
+// ../../packages/shared/src/constants.ts
+var APP_DISPLAY_NAME = "Tagline";
+var APP_PACKAGE_NAME = "tagline-sh";
+var BOT_GIT_IDENTITY = {
+  name: `${APP_PACKAGE_NAME}[bot]`,
+  email: `${APP_PACKAGE_NAME}[bot]@users.noreply.github.com`
+};
+
+// ../../packages/shared/src/utils.ts
+var RELEASE_BRANCH_PREFIX = "release/v";
+function releaseBranchName(version) {
+  const stripped = version.startsWith("v") ? version.slice(1) : version;
+  return `${RELEASE_BRANCH_PREFIX}${stripped}`;
+}
+function releaseTagName(version) {
+  return version.startsWith("v") ? version : `v${version}`;
+}
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js
 var external_exports = {};
@@ -28847,21 +28865,7 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// ../../packages/shared/dist/index.js
-var APP_DISPLAY_NAME = "Tagline";
-var APP_PACKAGE_NAME = "tagline-sh";
-var BOT_GIT_IDENTITY = {
-  name: `${APP_PACKAGE_NAME}[bot]`,
-  email: `${APP_PACKAGE_NAME}[bot]@users.noreply.github.com`
-};
-var RELEASE_BRANCH_PREFIX = "release/v";
-function releaseBranchName(version) {
-  const stripped = version.startsWith("v") ? version.slice(1) : version;
-  return `${RELEASE_BRANCH_PREFIX}${stripped}`;
-}
-function releaseTagName(version) {
-  return version.startsWith("v") ? version : `v${version}`;
-}
+// ../../packages/shared/src/schemas.ts
 var CommitTypeSchema = external_exports.enum([
   "feat",
   "fix",
@@ -29003,6 +29007,8 @@ var ReleaseResultSchema = external_exports.object({
   error: external_exports.string().nullable(),
   isDryRun: external_exports.boolean()
 });
+
+// ../../packages/shared/src/release-issue.ts
 var RELEASE_ISSUE_LABEL = "tagline:release-pending";
 function buildReleaseIssueClosingCommentBody(args) {
   const lines = [];
@@ -29039,7 +29045,7 @@ function buildReleaseIssueMonorepoClosingCommentBody(args) {
 }
 
 // src/release-executor.ts
-var core = __toESM(require_core(), 1);
+var core2 = __toESM(require_core(), 1);
 
 // src/steps/bump-version.ts
 var import_node_fs = require("fs");
@@ -30757,11 +30763,11 @@ function createLogger2(label, verbose, initialStep, infoDebugger = createLog()) 
   function step(phase) {
     const stepPrefix = phase && `[${phase}]` || "";
     const debug2 = debugDebugger && prefixedLogger(debugDebugger, stepPrefix) || NOOP;
-    const info3 = prefixedLogger(infoDebugger, `${labelPrefix} ${stepPrefix}`, debug2);
-    return Object.assign(debugDebugger ? debug2 : info3, {
+    const info4 = prefixedLogger(infoDebugger, `${labelPrefix} ${stepPrefix}`, debug2);
+    return Object.assign(debugDebugger ? debug2 : info4, {
       label,
       sibling,
-      info: info3,
+      info: info4,
       step
     });
   }
@@ -34317,6 +34323,60 @@ function buildFailureBody(tag, error2) {
   ].join("\n");
 }
 
+// src/steps/reconcile-release-branch.ts
+var core = __toESM(require_core(), 1);
+var OpenReleasePRConflictError = class extends Error {
+  prNumber;
+  prUrl;
+  branch;
+  constructor(prNumber, prUrl, branch) {
+    super(
+      `Release PR #${prNumber} is already open for branch \`${branch}\`. Merge or close it before re-approving \u2014 ${prUrl}`
+    );
+    this.name = "OpenReleasePRConflictError";
+    this.prNumber = prNumber;
+    this.prUrl = prUrl;
+    this.branch = branch;
+  }
+};
+async function reconcileReleaseBranch(plan, octokit) {
+  const branch = releaseBranchName(plan.nextVersion);
+  if (!await branchExistsOnRemote(plan.repoOwner, plan.repoName, branch, octokit)) {
+    return { branch, branchAbsent: true, orphanReclaimed: false };
+  }
+  const res = await octokit.rest.pulls.list({
+    owner: plan.repoOwner,
+    repo: plan.repoName,
+    head: `${plan.repoOwner}:${branch}`,
+    state: "open"
+  });
+  const openPR = res.data[0];
+  if (openPR) {
+    throw new OpenReleasePRConflictError(openPR.number, openPR.html_url, branch);
+  }
+  core.info(
+    `Reconciler: orphan branch \`${branch}\` found from a prior partial run; deleting before push.`
+  );
+  await octokit.rest.git.deleteRef({
+    owner: plan.repoOwner,
+    repo: plan.repoName,
+    ref: `heads/${branch}`
+  });
+  return { branch, branchAbsent: false, orphanReclaimed: true };
+}
+async function branchExistsOnRemote(owner, repo, branch, octokit) {
+  try {
+    await octokit.rest.repos.getBranch({ owner, repo, branch });
+    return true;
+  } catch (err) {
+    if (isStatus(err, 404)) return false;
+    throw err;
+  }
+}
+function isStatus(err, status) {
+  return typeof err === "object" && err !== null && "status" in err && err.status === status;
+}
+
 // src/release-executor.ts
 function buildFinalizePayload(plan) {
   const isMonorepo = plan.packages.length > 0;
@@ -34352,14 +34412,14 @@ async function executeProposeRelease(plan, deps) {
   const branch = releaseBranchName(plan.nextVersion);
   let prUrl = null;
   try {
-    core.info(`Step 1/5: Bumping versions to ${plan.nextVersion}`);
+    core2.info(`Step 1/5: Bumping versions to ${plan.nextVersion}`);
     const bumped = await bumpVersion(plan, deps.workspaceRoot);
-    core.info(`  bumped ${bumped.files.length} file(s)`);
-    core.info(`Step 2/5: Writing CHANGELOG.md`);
+    core2.info(`  bumped ${bumped.files.length} file(s)`);
+    core2.info(`Step 2/5: Writing CHANGELOG.md`);
     const changelog = await writeChangelog(plan, deps.workspaceRoot);
-    core.info(`  wrote ${changelog.files.length} file(s)`);
+    core2.info(`  wrote ${changelog.files.length} file(s)`);
     if (plan.isDryRun) {
-      core.info("Dry run: skipping git/PR writes.");
+      core2.info("Dry run: skipping git/PR writes.");
       await tryPostCompletion(plan, deps.octokit, {
         kind: "propose",
         prUrl: null,
@@ -34375,30 +34435,34 @@ async function executeProposeRelease(plan, deps) {
         isDryRun: true
       };
     }
-    core.info(`Step 3/5: Commit + push branch ${branch}`);
+    core2.info(`Step 3/5: Commit + push branch ${branch}`);
+    const reconciled = await reconcileReleaseBranch(plan, deps.octokit);
+    if (reconciled.orphanReclaimed) {
+      core2.info(`  reclaimed orphan branch ${reconciled.branch} from a prior run`);
+    }
     const git = await commitAndPushBranch(
       plan,
       deps.workspaceRoot,
       deps.git ? { git: deps.git } : {}
     );
-    core.info(`  branch=${git.branch} sha=${git.commitSha}`);
-    core.info(`Step 4/5: Opening release PR`);
+    core2.info(`  branch=${git.branch} sha=${git.commitSha}`);
+    core2.info(`Step 4/5: Opening release PR`);
     const payload = buildFinalizePayload(plan);
     const pr = await openReleasePR(plan, deps.octokit, payload);
     prUrl = pr.prUrl;
-    core.info(`  ${prUrl}`);
-    core.info(
+    core2.info(`  ${prUrl}`);
+    core2.info(
       `  embedded plan marker: tags=${payload.tags.length} draft=${payload.draft} issue=${payload.issueNumber}`
     );
-    core.info(`Step 5/5: Posting acknowledgement comment`);
+    core2.info(`Step 5/5: Posting acknowledgement comment`);
     await tryPostCompletion(plan, deps.octokit, {
       kind: "propose",
       prUrl,
       dryRun: false
     });
-    core.setOutput("version", plan.nextVersion);
-    core.setOutput("tag", tag);
-    core.setOutput("pr_url", prUrl);
+    core2.setOutput("version", plan.nextVersion);
+    core2.setOutput("tag", tag);
+    core2.setOutput("pr_url", prUrl);
     return {
       success: true,
       nextVersion: plan.nextVersion,
@@ -34410,7 +34474,7 @@ async function executeProposeRelease(plan, deps) {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    core.error(`Release proposal failed: ${message}`);
+    core2.error(`Release proposal failed: ${message}`);
     await tryPostCompletion(plan, deps.octokit, {
       kind: "propose",
       prUrl,
@@ -34451,7 +34515,7 @@ async function executeFinalizeRelease(input, deps) {
   const payload = extractFinalizePlan(input.prBody);
   if (!payload) {
     const message = "Tagline could not find the embedded plan marker in the release PR body. The release PR may have been edited or opened by hand. Skipping tag + release.";
-    core.warning(message);
+    core2.warning(message);
     return {
       success: false,
       nextVersion: "0.0.0",
@@ -34463,7 +34527,7 @@ async function executeFinalizeRelease(input, deps) {
     };
   }
   try {
-    core.info(`Step 1/3: Tagging merge commit ${input.mergeSha} with ${payload.tags.length} tag(s)`);
+    core2.info(`Step 1/3: Tagging merge commit ${input.mergeSha} with ${payload.tags.length} tag(s)`);
     const tagged = await tagMergeCommit(
       {
         repoOwner: input.repoOwner,
@@ -34473,8 +34537,8 @@ async function executeFinalizeRelease(input, deps) {
       },
       deps.octokit
     );
-    core.info(`  created: [${tagged.created.join(", ")}] skipped: [${tagged.skipped.join(", ")}]`);
-    core.info(`Step 2/3: Creating ${payload.tags.length} GitHub Release(s)`);
+    core2.info(`  created: [${tagged.created.join(", ")}] skipped: [${tagged.skipped.join(", ")}]`);
+    core2.info(`Step 2/3: Creating ${payload.tags.length} GitHub Release(s)`);
     const releaseUrls = [];
     for (let i2 = 0; i2 < payload.tags.length; i2 += 1) {
       const tag = payload.tags[i2];
@@ -34493,11 +34557,11 @@ async function executeFinalizeRelease(input, deps) {
           deps.octokit
         );
         releaseUrls.push(rel.releaseUrl);
-        core.info(`  ${tag} \u2192 ${rel.releaseUrl}`);
+        core2.info(`  ${tag} \u2192 ${rel.releaseUrl}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         if (/already_exists|already exists/i.test(message)) {
-          core.info(`  ${tag} \u2192 release already exists, skipping`);
+          core2.info(`  ${tag} \u2192 release already exists, skipping`);
           releaseUrls.push(null);
           continue;
         }
@@ -34505,7 +34569,7 @@ async function executeFinalizeRelease(input, deps) {
       }
     }
     if (payload.issueNumber > 0) {
-      core.info(`Step 3/3: Closing release issue #${payload.issueNumber}`);
+      core2.info(`Step 3/3: Closing release issue #${payload.issueNumber}`);
       await tryCloseReleaseIssue({
         octokit: deps.octokit,
         repoOwner: input.repoOwner,
@@ -34516,13 +34580,13 @@ async function executeFinalizeRelease(input, deps) {
         summaryMarkdown: payload.summaryMarkdown
       });
     } else {
-      core.info("Step 3/3: skipping release-issue close (no issue number in plan)");
+      core2.info("Step 3/3: skipping release-issue close (no issue number in plan)");
     }
     const primaryTag = payload.tags[0] ?? releaseTagName(payload.nextVersion);
     const primaryUrl = releaseUrls[0] ?? null;
-    core.setOutput("version", payload.nextVersion);
-    core.setOutput("tag", primaryTag);
-    core.setOutput("release_url", primaryUrl);
+    core2.setOutput("version", payload.nextVersion);
+    core2.setOutput("tag", primaryTag);
+    core2.setOutput("release_url", primaryUrl);
     return {
       success: true,
       nextVersion: payload.nextVersion,
@@ -34534,7 +34598,7 @@ async function executeFinalizeRelease(input, deps) {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    core.error(`Release finalize failed: ${message}`);
+    core2.error(`Release finalize failed: ${message}`);
     return {
       success: false,
       nextVersion: payload.nextVersion,
@@ -34557,7 +34621,7 @@ async function tryPostCompletion(plan, octokit, ctx) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    core.warning(
+    core2.warning(
       `Could not post completion comment (release itself was not affected): ${message}. If you see "Resource not accessible by integration", add \`issues: write\` to your workflow permissions.`
     );
   }
@@ -34583,7 +34647,7 @@ async function tryCloseReleaseIssue(args) {
     commented = true;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    core.warning(
+    core2.warning(
       `Could not post release-issue completion comment on #${args.issueNumber}: ${message}. If you see "Resource not accessible by integration", add \`issues: write\` to your workflow permissions.`
     );
   }
@@ -34597,7 +34661,7 @@ async function tryCloseReleaseIssue(args) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (!/already_exists|not.?found|404/i.test(message)) {
-      core.warning(
+      core2.warning(
         `Could not remove label \`${RELEASE_ISSUE_LABEL}\` from #${args.issueNumber}: ${message}.`
       );
     }
@@ -34611,45 +34675,45 @@ async function tryCloseReleaseIssue(args) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    core.warning(`Could not close release issue #${args.issueNumber}: ${message}.`);
+    core2.warning(`Could not close release issue #${args.issueNumber}: ${message}.`);
   }
   if (commented) {
-    core.info(`  closed release issue #${args.issueNumber}`);
+    core2.info(`  closed release issue #${args.issueNumber}`);
   }
 }
 
 // src/main.ts
 async function run() {
   try {
-    const githubToken = core2.getInput("github_token", { required: true });
+    const githubToken = core3.getInput("github_token", { required: true });
     const octokit = github.getOctokit(githubToken);
     const workspaceRoot = process.env["GITHUB_WORKSPACE"] ?? process.cwd();
     const eventName = process.env["GITHUB_EVENT_NAME"] ?? "workflow_dispatch";
-    core2.info(`Tagline action starting \u2014 GITHUB_EVENT_NAME=${eventName}`);
-    core2.info(`  GITHUB_REPOSITORY=${process.env["GITHUB_REPOSITORY"] ?? "<unset>"}`);
-    core2.info(`  GITHUB_REF=${process.env["GITHUB_REF"] ?? "<unset>"}`);
-    core2.info(`  GITHUB_SHA=${process.env["GITHUB_SHA"] ?? "<unset>"}`);
+    core3.info(`Tagline action starting \u2014 GITHUB_EVENT_NAME=${eventName}`);
+    core3.info(`  GITHUB_REPOSITORY=${process.env["GITHUB_REPOSITORY"] ?? "<unset>"}`);
+    core3.info(`  GITHUB_REF=${process.env["GITHUB_REF"] ?? "<unset>"}`);
+    core3.info(`  GITHUB_SHA=${process.env["GITHUB_SHA"] ?? "<unset>"}`);
     if (eventName === "push") {
-      core2.info("Routing to Phase B (finalize via push) \u2014 checking if HEAD is a release-PR merge.");
+      core3.info("Routing to Phase B (finalize via push) \u2014 checking if HEAD is a release-PR merge.");
       await runFinalizeFromPush(octokit, workspaceRoot);
       return;
     }
     if (eventName === "pull_request") {
-      core2.info("Routing to Phase B (finalize via pull_request) \u2014 legacy PAT path.");
+      core3.info("Routing to Phase B (finalize via pull_request) \u2014 legacy PAT path.");
       await runFinalize(octokit, workspaceRoot);
       return;
     }
-    core2.info(`Routing to Phase A (propose) \u2014 event "${eventName}" is workflow_dispatch.`);
+    core3.info(`Routing to Phase A (propose) \u2014 event "${eventName}" is workflow_dispatch.`);
     await runPropose(octokit, workspaceRoot);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    core2.setFailed(`Tagline action crashed: ${message}`);
+    core3.setFailed(`Tagline action crashed: ${message}`);
   }
 }
 async function runPropose(octokit, workspaceRoot) {
-  const releasePlanInput = core2.getInput("release_plan", { required: true });
-  const issueNumberRaw = core2.getInput("issue_number");
-  const dryRunRaw = core2.getInput("dry_run");
+  const releasePlanInput = core3.getInput("release_plan", { required: true });
+  const issueNumberRaw = core3.getInput("issue_number");
+  const dryRunRaw = core3.getInput("dry_run");
   const plan = ReleasePlanSchema.parse(JSON.parse(releasePlanInput));
   if (dryRunRaw === "true") plan.isDryRun = true;
   if (issueNumberRaw && /^\d+$/.test(issueNumberRaw)) {
@@ -34657,38 +34721,38 @@ async function runPropose(octokit, workspaceRoot) {
   }
   const result = await executeProposeRelease(plan, { octokit, workspaceRoot });
   if (!result.success) {
-    core2.setFailed(result.error ?? "Release proposal failed");
+    core3.setFailed(result.error ?? "Release proposal failed");
   }
 }
 async function runFinalize(octokit, workspaceRoot) {
   const eventPath = process.env["GITHUB_EVENT_PATH"];
   if (!eventPath) {
-    core2.setFailed("GITHUB_EVENT_PATH unset on pull_request event \u2014 cannot finalize.");
+    core3.setFailed("GITHUB_EVENT_PATH unset on pull_request event \u2014 cannot finalize.");
     return;
   }
   const raw = await import_node_fs3.promises.readFile(eventPath, "utf8");
   const event = JSON.parse(raw);
-  core2.info(
+  core3.info(
     `Phase B input \u2014 action=${event.action ?? "<none>"} merged=${event.pull_request?.merged ?? "<none>"} head=${event.pull_request?.head?.ref ?? "<none>"} base=${event.pull_request?.base?.ref ?? "<none>"} number=${event.pull_request?.number ?? "<none>"} merge_sha=${event.pull_request?.merge_commit_sha ?? "<none>"}`
   );
   if (event.action !== "closed") {
-    core2.warning(
+    core3.warning(
       `pull_request.${event.action ?? "?"} \u2014 Phase B only runs on 'closed'. Check your workflow's pull_request types filter.`
     );
     return;
   }
   if (!event.pull_request?.merged) {
-    core2.info("PR was closed without merging \u2014 release cancelled, no tag created.");
+    core3.info("PR was closed without merging \u2014 release cancelled, no tag created.");
     return;
   }
   const headRef = event.pull_request.head?.ref ?? "";
   if (!headRef.startsWith("release/")) {
-    core2.info(`PR head ref is "${headRef}" \u2014 not a release/* branch, skipping.`);
+    core3.info(`PR head ref is "${headRef}" \u2014 not a release/* branch, skipping.`);
     return;
   }
   const mergeSha = event.pull_request.merge_commit_sha;
   if (!mergeSha) {
-    core2.setFailed(
+    core3.setFailed(
       "Merged PR has no merge_commit_sha \u2014 GitHub may still be computing the merge commit. Re-run the workflow in 30s."
     );
     return;
@@ -34696,17 +34760,17 @@ async function runFinalize(octokit, workspaceRoot) {
   const owner = event.repository?.owner.login;
   const name = event.repository?.name;
   if (!owner || !name) {
-    core2.setFailed("Could not resolve repository owner/name from event payload.");
+    core3.setFailed("Could not resolve repository owner/name from event payload.");
     return;
   }
   const body = event.pull_request.body ?? "";
   const markerPresent = body.includes("<!-- tagline-plan-v1");
-  core2.info(
+  core3.info(
     `Phase B body inspection \u2014 length=${body.length} marker_present=${markerPresent}`
   );
   if (!markerPresent && body.length > 0) {
     const tail = body.slice(Math.max(0, body.length - 400));
-    core2.info(`PR body tail (last 400 chars):
+    core3.info(`PR body tail (last 400 chars):
 ${tail}`);
   }
   const result = await executeFinalizeRelease(
@@ -34721,9 +34785,9 @@ ${tail}`);
     { octokit, workspaceRoot }
   );
   if (!result.success) {
-    core2.setFailed(result.error ?? "Release finalize failed");
+    core3.setFailed(result.error ?? "Release finalize failed");
   } else {
-    core2.info(
+    core3.info(
       `Phase B done \u2014 tagged ${result.tagName} at ${mergeSha}, release: ${result.releaseUrl ?? "<no release URL>"}`
     );
   }
@@ -34732,38 +34796,38 @@ async function runFinalizeFromPush(octokit, workspaceRoot) {
   const sha = process.env["GITHUB_SHA"];
   const repoEnv = process.env["GITHUB_REPOSITORY"];
   if (!sha || !repoEnv) {
-    core2.setFailed(
+    core3.setFailed(
       "GITHUB_SHA or GITHUB_REPOSITORY unset on push event \u2014 cannot determine commit to finalize."
     );
     return;
   }
   const [owner, name] = repoEnv.split("/");
   if (!owner || !name) {
-    core2.setFailed(`GITHUB_REPOSITORY is malformed: "${repoEnv}"`);
+    core3.setFailed(`GITHUB_REPOSITORY is malformed: "${repoEnv}"`);
     return;
   }
   const finalizeInput = await findReleasePRForCommit(octokit, owner, name, sha);
   if (!finalizeInput) {
-    core2.info(
+    core3.info(
       `Push ${sha} is not a release-PR merge \u2014 no Phase B work to do (this is normal for non-release pushes).`
     );
     return;
   }
   const body = finalizeInput.prBody ?? "";
   const markerPresent = body.includes("<!-- tagline-plan-v1");
-  core2.info(
+  core3.info(
     `Detected release PR #${finalizeInput.prNumber} (head=${finalizeInput.headRef}) merged at ${sha}. body length=${body.length} marker_present=${markerPresent}`
   );
   if (!markerPresent && body.length > 0) {
     const tail = body.slice(Math.max(0, body.length - 400));
-    core2.info(`PR body tail (last 400 chars):
+    core3.info(`PR body tail (last 400 chars):
 ${tail}`);
   }
   const result = await executeFinalizeRelease(finalizeInput, { octokit, workspaceRoot });
   if (!result.success) {
-    core2.setFailed(result.error ?? "Release finalize failed");
+    core3.setFailed(result.error ?? "Release finalize failed");
   } else {
-    core2.info(
+    core3.info(
       `Phase B done \u2014 tagged ${result.tagName} at ${sha}, release: ${result.releaseUrl ?? "<no release URL>"}`
     );
   }
