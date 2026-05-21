@@ -29003,6 +29003,40 @@ var ReleaseResultSchema = external_exports.object({
   error: external_exports.string().nullable(),
   isDryRun: external_exports.boolean()
 });
+var RELEASE_ISSUE_LABEL = "tagline:release-pending";
+function buildReleaseIssueClosingCommentBody(args) {
+  const lines = [];
+  lines.push(`Released \`${args.tagName}\` \u{1F389}`);
+  lines.push("");
+  lines.push(`Release: ${args.releaseUrl}`);
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push("**Ready to share:**");
+  lines.push("");
+  lines.push(args.readyToShareMarkdown.trimEnd());
+  return lines.join("\n");
+}
+function buildReleaseIssueMonorepoClosingCommentBody(args) {
+  const lines = [];
+  lines.push(`Released ${args.tags.length} packages \u{1F389}`);
+  lines.push("");
+  for (let i2 = 0; i2 < args.tags.length; i2 += 1) {
+    const url = args.releaseUrls[i2];
+    if (url) {
+      lines.push(`- \`${args.tags[i2]}\` \u2192 ${url}`);
+    } else {
+      lines.push(`- \`${args.tags[i2]}\` (already released, skipped)`);
+    }
+  }
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push("**Ready to share:**");
+  lines.push("");
+  lines.push(args.readyToShareMarkdown.trimEnd());
+  return lines.join("\n");
+}
 
 // src/release-executor.ts
 var core = __toESM(require_core(), 1);
@@ -34464,21 +34498,26 @@ async function executeFinalizeRelease(input, deps) {
         const message = err instanceof Error ? err.message : String(err);
         if (/already_exists|already exists/i.test(message)) {
           core.info(`  ${tag} \u2192 release already exists, skipping`);
+          releaseUrls.push(null);
           continue;
         }
         throw err;
       }
     }
-    core.info(`Step 3/3: Commenting on PR #${input.prNumber}`);
-    await tryPostFinalizeComment({
-      octokit: deps.octokit,
-      repoOwner: input.repoOwner,
-      repoName: input.repoName,
-      prNumber: input.prNumber,
-      tags: payload.tags,
-      releaseUrls,
-      summaryMarkdown: payload.summaryMarkdown
-    });
+    if (payload.issueNumber > 0) {
+      core.info(`Step 3/3: Closing release issue #${payload.issueNumber}`);
+      await tryCloseReleaseIssue({
+        octokit: deps.octokit,
+        repoOwner: input.repoOwner,
+        repoName: input.repoName,
+        issueNumber: payload.issueNumber,
+        tags: payload.tags,
+        releaseUrls,
+        summaryMarkdown: payload.summaryMarkdown
+      });
+    } else {
+      core.info("Step 3/3: skipping release-issue close (no issue number in plan)");
+    }
     const primaryTag = payload.tags[0] ?? releaseTagName(payload.nextVersion);
     const primaryUrl = releaseUrls[0] ?? null;
     core.setOutput("version", payload.nextVersion);
@@ -34523,34 +34562,59 @@ async function tryPostCompletion(plan, octokit, ctx) {
     );
   }
 }
-async function tryPostFinalizeComment(args) {
-  const lines = [];
-  if (args.tags.length === 1) {
-    lines.push(`Released \`${args.tags[0]}\` \u{1F389}`);
-  } else {
-    lines.push(`Released ${args.tags.length} packages \u{1F389}`);
-  }
-  lines.push("");
-  for (let i2 = 0; i2 < args.tags.length; i2 += 1) {
-    const url = args.releaseUrls[i2];
-    if (url) lines.push(`- \`${args.tags[i2]}\` \u2192 ${url}`);
-  }
-  lines.push("");
-  lines.push("---");
-  lines.push("");
-  lines.push("**Ready to share:**");
-  lines.push("");
-  lines.push(args.summaryMarkdown.trimEnd());
+async function tryCloseReleaseIssue(args) {
+  const body = args.tags.length === 1 ? buildReleaseIssueClosingCommentBody({
+    tagName: args.tags[0],
+    releaseUrl: args.releaseUrls[0] ?? "",
+    readyToShareMarkdown: args.summaryMarkdown
+  }) : buildReleaseIssueMonorepoClosingCommentBody({
+    tags: args.tags,
+    releaseUrls: args.releaseUrls,
+    readyToShareMarkdown: args.summaryMarkdown
+  });
+  let commented = false;
   try {
     await args.octokit.rest.issues.createComment({
       owner: args.repoOwner,
       repo: args.repoName,
-      issue_number: args.prNumber,
-      body: lines.join("\n")
+      issue_number: args.issueNumber,
+      body
+    });
+    commented = true;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    core.warning(
+      `Could not post release-issue completion comment on #${args.issueNumber}: ${message}. If you see "Resource not accessible by integration", add \`issues: write\` to your workflow permissions.`
+    );
+  }
+  try {
+    await args.octokit.rest.issues.removeLabel({
+      owner: args.repoOwner,
+      repo: args.repoName,
+      issue_number: args.issueNumber,
+      name: RELEASE_ISSUE_LABEL
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    core.warning(`Could not post finalize comment: ${message}.`);
+    if (!/already_exists|not.?found|404/i.test(message)) {
+      core.warning(
+        `Could not remove label \`${RELEASE_ISSUE_LABEL}\` from #${args.issueNumber}: ${message}.`
+      );
+    }
+  }
+  try {
+    await args.octokit.rest.issues.update({
+      owner: args.repoOwner,
+      repo: args.repoName,
+      issue_number: args.issueNumber,
+      state: "closed"
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    core.warning(`Could not close release issue #${args.issueNumber}: ${message}.`);
+  }
+  if (commented) {
+    core.info(`  closed release issue #${args.issueNumber}`);
   }
 }
 
