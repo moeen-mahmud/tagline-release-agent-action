@@ -21,39 +21,39 @@ Drop this into `.github/workflows/release-agent.yml` in your repo:
 ```yaml
 name: Tagline Release Agent
 on:
-    workflow_dispatch:
-        inputs:
-            release_plan:
-                description: 'Release plan (JSON, set by the Tagline bot)'
-                required: true
-    push:
-        branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      release_plan:
+        description: "Release plan (JSON, set by the Tagline bot)"
+        required: true
+  push:
+    branches: [main, master]
 
 permissions:
-    contents: write
-    pull-requests: write
-    issues: write
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
-    release:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-            - uses: HelicanHQ/tagline-release-agent-action@v1
-              with:
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: HelicanHQ/tagline-release-agent-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 Then install the [Tagline GitHub App](https://github.com/apps/tagline-sh) on your repository. The bot will open a release-tracking issue when PRs start landing.
 
 ## Pinning
 
-| Pin | When to use |
-|-----|-------------|
-| `HelicanHQ/tagline-release-agent-action@v1` | **Recommended.** Rolling major tag — you automatically get patch and minor releases inside v1. Breaking changes will land under v2 and won't move this pin. |
-| `HelicanHQ/tagline-release-agent-action@v1.0.0` | Pin to an exact release. Predictable; you decide when to upgrade. Requires you to bump manually. |
+| Pin                                                   | When to use                                                                                                                                                                                                             |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HelicanHQ/tagline-release-agent-action@v1`           | **Recommended.** Rolling major tag — you automatically get patch and minor releases inside v1. Breaking changes will land under v2 and won't move this pin.                                                             |
+| `HelicanHQ/tagline-release-agent-action@v1.0.0`       | Pin to an exact release. Predictable; you decide when to upgrade. Requires you to bump manually.                                                                                                                        |
 | `HelicanHQ/tagline-release-agent-action@<commit-sha>` | Pin to a specific bundled commit. Most paranoid option — protects against tag-tampering attacks. See [upstream security policy](https://github.com/HelicanHQ/tagline-sh/blob/main/docs/security.md) for the discussion. |
 
 The rolling `v1` tag is force-moved with each minor/patch release. Pre-release tags (`-rc`, `-alpha`, `-beta`) are deliberately **not** mirrored here — only stable releases reach this repo.
